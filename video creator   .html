@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Creator & Dual Gateway Server (https://videocreator.com)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #ffffff; color: #1c2128; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ১. ব্রাউজার ট্যাব বার */
+    .tab-bar { background: #f6f8fa; display: flex; align-items: center; padding: 6px 10px 0; gap: 6px; border-bottom: 1px solid #d0d7de; }
+    .tab { background: #eaeeef; padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 13px; cursor: pointer; color: #57606a; border: 1px solid #d0d7de; border-bottom: none; }
+    .tab.active { background: #ffffff; color: #0969da; font-weight: bold; }
+    .new-tab-btn { background: #000000; color: #ffffff; border: none; font-size: 16px; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-left: 4px; }
+
+    /* ২. নেভিগেশন বার */
+    .nav-bar { background: #ffffff; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #d0d7de; }
+    .nav-btn { background: #f6f8fa; border: 1px solid #d0d7de; color: #1c2128; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .address-bar-container { flex: 1; display: flex; align-items: center; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 0 10px; }
+    .address-bar { width: 100%; background: transparent; border: none; padding: 8px; color: #1c2128; font-size: 14px; outline: none; }
+    .badge-shield { background: #1f883d; color: #ffffff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+    /* ৩. ভিউপোর্ট প্যানেল */
+    .app-viewport { flex: 1; position: relative; background: #f6f8fa; overflow-y: auto; }
+    .view-panel { display: none; height: 100%; width: 100%; }
+    .view-panel.active { display: block; }
+    iframe { width: 100%; height: 100%; border: none; background: #fff; }
+
+    /* ৪. ড্যাশবোর্ড কার্ড */
+    .container { padding: 20px; max-width: 1000px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .card { background: #ffffff; border: 1px solid #d0d7de; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    input, select, button { width: 100%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #d0d7de; background: #ffffff; color: #1c2128; box-sizing: border-box; }
+    button.action-btn { background: #1f883d; color: #ffffff; font-weight: bold; border: none; cursor: pointer; }
+    
+    .terminal-box { background: #0d1117; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px; color: #7ee787; margin-top: 10px; height: 130px; overflow-y: auto; }
+    .system-status { background: #f6f8fa; padding: 6px 15px; font-size: 11px; color: #57606a; display: flex; justify-content: space-between; border-top: 1px solid #d0d7de; font-weight: bold; }
+    .money-stat { font-size: 20px; font-weight: bold; color: #1f883d; margin-top: 5px; }
+
+    /* POP-UP স্টাইল */
+    .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+    .popup-content { background: #ffffff; border-radius: 12px; padding: 25px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 2px solid #0969da; }
+    .close-btn { position: absolute; top: 12px; right: 15px; background: #cf222e; color: #ffffff; border: none; font-size: 14px; font-weight: bold; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .pricing-option { background: #f6f8fa; border: 1px solid #d0d7de; padding: 10px; border-radius: 8px; margin: 8px 0; text-align: left; }
+    .buy-now-btn { background: #0969da; color: white; border: none; font-weight: bold; padding: 10px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- 🌟 ১. মূল সাবস্ক্রিপশন পপ-আপ -->
+  <div class="popup-overlay" id="subscriptionPopup">
+    <div class="popup-content">
+      <button class="close-btn" onclick="openTrialPopup()">✖</button>
+      <h2 style="color:#0969da; margin-bottom:5px;">🚀 Enterprise Subscription</h2>
+      <p style="font-size:12px; color:#57606a; margin-bottom:15px;">Video Creator ইয়ারলি সাবস্ক্রিপশন প্ল্যান:</p>
+
+      <div class="pricing-option">
+        <label><input type="radio" name="plan" value="$200 Billion" checked> <strong>১% শেয়ার (Yearly Lease):</strong></label>
+        <p style="color:#1f883d; font-weight:bold; margin-left:20px;">$200 Billion / বছর</p>
+      </div>
+
+      <div class="pricing-option">
+        <label><input type="radio" name="plan" value="$670 Quadrillion"> <strong>১০% শেয়ার (Yearly Lease):</strong></label>
+        <p style="color:#8250df; font-weight:bold; margin-left:20px;">$670 Quadrillion / বছর</p>
+      </div>
+
+      <div class="pricing-option">
+        <label><input type="radio" name="plan" value="$999 Decillion"> <strong>১০০% শেয়ার (Full Lease):</strong></label>
+        <p style="color:#cf222e; font-weight:bold; margin-left:20px;">$999 Decillion ($999 Dc) / বছর</p>
+      </div>
+
+      <button class="buy-now-btn" onclick="PaymentGatewayEngine.processSubscriptionPayment()">🛒 Buy Now (Instant Transfer)</button>
+    </div>
+  </div>
+
+  <!-- 🎁 ২. ১ মাসের ১০% ট্রায়াল পপ-আপ -->
+  <div class="popup-overlay" id="trialPopup" style="display: none;">
+    <div class="popup-content" style="border-color: #8250df;">
+      <button class="close-btn" onclick="closeTrialPopup()">✖</button>
+      <h2 style="color:#8250df; margin-bottom:5px;">🎁 1 Month Free Trial</h2>
+      <p style="font-weight:bold; color:#1c2128; margin-top:10px;">Last Free Trial For 10% Admin Access</p>
+      <p style="font-size:12px; color:#57606a; margin:10px 0;">আপনি ১ মাসের জন্য সীমিত ১০% এডমিন এক্সেস পাবেন। মূল সার্ভারে কোনো পরিবর্তন করা যাবে না। মেয়াদ শেষে এক্সেস বন্ধ হয়ে যাবে।</p>
+      
+      <button class="buy-now-btn" style="background:#8250df;" onclick="activateFreeTrial()">⚡ Try Now (Start 1 Month Trial)</button>
+    </div>
+  </div>
+
+  <!-- ১. কাস্টম ট্যাব বার -->
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab(0)">🎬 Video Creator Studio</div>
+    <div class="tab" onclick="switchTab(1)">⚡ 100K Cluster & Dual Payment Server</div>
+    <div class="tab" onclick="switchTab(2)">🌐 Video Creator Web Browser</div>
+    <button class="new-tab-btn" onclick="addNewTab()" title="নতুন ট্যাব খুলুন">+</button>
+  </div>
+
+  <!-- ২. নেভিগেশন কন্ট্রোল -->
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="goBack()">◀</button>
+    <button class="nav-btn" onclick="goForward()">▶</button>
+    <button class="nav-btn" onclick="reloadTab()">🔄</button>
+    
+    <div class="address-bar-container">
+      <span class="badge-shield" id="trialStatusBadge">🛡️ 1,00,000 Nodes Active</span>
+      <input type="text" class="address-bar" id="urlInput" value="https://videocreator.com" onkeydown="handleEnter(event)">
+    </div>
+    <button class="nav-btn" style="background:#1f883d; color:#fff;" onclick="navigate()">Go</button>
+  </div>
+
+  <!-- ৩. ভিউপোর্ট সমূহ -->
+  <div class="app-viewport">
+    
+    <!-- প্যানেল ১: ভিডিও ক্রিয়েটর স্টুডিও -->
+    <div class="view-panel active" id="panel-studio">
+      <div class="container">
+        <h2 style="color:#0969da;">🎬 Video Creator Hub & Continuous Ad Loop</h2>
+        <p style="font-size:13px; color:#57606a; margin-bottom:15px;">অনলিমিটেড ইউজার সাপোর্ট, ব্যাকগ্রাউন্ড র্যান্ডম এড ও ৫০-৫০ অটো-স্প্লিট ইনকাম সহ।</p>
+        
+        <div class="grid">
+          <div class="card">
+            <h3>📹 ভিডিও প্রসেসর মোড</h3>
+            <label style="font-size:12px; font-weight:bold;">রেজোলিউশন নির্বাচন করুন:</label>
+            <select id="resSelect">
+              <option>1080p Full HD</option>
+              <option>4K Ultra HD (Hardware Acceleration)</option>
+              <option>8K Native Processing</option>
+            </select>
+            <button class="action-btn" onclick="startSmartRender()">⚡ স্মার্ট প্রসেসিং শুরু করুন</button>
+          </div>
+
+          <div class="card">
+            <h3>♟️ Client Window Isolation Guard</h3>
+            <p style="font-size:12px; color:#57606a;">এক ইউজারের পরিবর্তনের প্রভাব অন্য কারো ওপর পড়বে না:</p>
+            <input type="text" id="customLocalRule" placeholder="যেমন: custom_speed=2.5x">
+            <button class="action-btn" style="background:#9a6700; color:#fff;" onclick="applyLocalRule()">🔒 শুধুমাত্র এই ডিভাইসে নিয়ম প্রয়োগ করুন</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- প্যানেল ২: ১,০০,০০০ সার্ভার + ডাবল ব্যাকএন্ড -->
+    <div class="view-panel" id="panel-satellite">
+      <div class="container">
+        <h2 style="color:#0969da;">🌐 Global 100,000 Nodes & Dual Payment Servers</h2>
+        
+        <div class="grid" style="margin-bottom: 10px;">
+          <div class="card" style="border-color: #1f883d;">
+            <p style="font-size:12px; color:#57606a; font-weight:bold;">💰 ক্রিয়েটরের আয় (৫০%):</p>
+            <div class="money-stat" id="creatorBalance">৳ 0.00</div>
+          </div>
+          <div class="card" style="border-color: #8250df;">
+            <p style="font-size:12px; color:#57606a; font-weight:bold;">👑 জিমির (ওনার) মোট ফান্ড & ওয়ালেট:</p>
+            <div class="money-stat" style="color:#8250df;" id="ownerBalance">৳ 0.00</div>
+          </div>
+        </div>
+
+        <div class="card" style="border-color: #0969da;">
+          <span class="ad-badge" id="currentAdDisplay" style="background:#ddf4ff; color:#0969da; font-size:11px; padding:4px 10px; border-radius:12px; font-weight:bold;">🔄 ব্যাকগ্রাউন্ড এড: প্রস্তুত হচ্ছে...</span>
+          <p style="font-size:12px; color:#57606a; margin-top:5px;">ডাবল ব্যাকএন্ড গেটওয়ে রিয়েল-টাইমে কানেক্টেড:</p>
+          
+          <div class="grid" style="margin-top:10px;">
+            <div>
+              <label style="font-size:12px; font-weight:bold;">অনলাইন ইউজার ট্রাফিক:</label>
+              <input type="number" id="simUsers" value="500000">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:bold;">অটো-স্কেলিং মেকানিজম:</label>
+              <select id="scalingMode">
+                <option value="100000">100,000 Auto-Scaled Nodes</option>
+                <option value="500000">500,000 Mega Cluster Nodes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid">
+            <button class="action-btn" style="background: linear-gradient(45deg, #8250df, #0969da);" onclick="triggerClusterScale()">🚀 ১,০০,০০০ নোড স্কেল করুন</button>
+            <button class="action-btn" style="background: linear-gradient(45deg, #1f883d, #9a6700); color:#fff;" onclick="MonetizationEngine.runNextRandomAd()">🎲 র্যান্ডম এড চালনা করুন</button>
+          </div>
+          
+          <div id="clusterTerminal" class="terminal-box">
+            > [SYSTEM OK]: Video Creator Engine Loaded.<br>
+            > [CLUSTER STATUS]: 100,000 Processing Nodes Active.<br>
+            > [PAYMENT BACKEND SERVER A]: Bank Transfer Pipeline Active.<br>
+            > [PAYMENT BACKEND SERVER B]: Backup Vault Vault-Sync Ready.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- প্যানেল ৩: ব্রাউজার Engine -->
+    <div class="view-panel" id="panel-browser">
+      <iframe id="webFrame" src="https://www.google.com/search?igu=1"></iframe>
+    </div>
+
+  </div>
+
+  <!-- ৪. সিস্টেম স্ট্যাটাস -->
+  <div class="system-status">
+    <span>🛡️ System: Video Creator Core Platform</span>
+    <span>💳 Payment Backend: 2 Dedicated Transfer Servers ACTIVE</span>
+    <span id="trialTimeDisplay">🎁 Trial Mode: Inactive</span>
+  </div>
+
+<script>
+  let activeTab = 0;
+
+  function openTrialPopup() {
+    document.getElementById('subscriptionPopup').style.display = 'none';
+    
+    if (localStorage.getItem("trial_used") === "true") {
+      alert("❌ আপনার ১ মাসের ফ্রি ট্রায়ালটি ইতিপূর্বে শেষ হয়ে গেছে! আর ট্রায়াল নেওয়া যাবে না। সাবস্ক্রিপশন প্ল্যান নির্বাচন করুন।");
+      document.getElementById('subscriptionPopup').style.display = 'flex';
+    } else {
+      document.getElementById('trialPopup').style.display = 'flex';
+    }
+  }
+
+  function closeTrialPopup() {
+    document.getElementById('trialPopup').style.display = 'none';
+  }
+
+  function activateFreeTrial() {
+    localStorage.setItem("trial_used", "true");
+    
+    const oneMonthTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000);
+    localStorage.setItem("trial_expires", oneMonthTime);
+
+    document.getElementById('trialStatusBadge').innerText = "🎁 10% Limited Admin Access (Trial Active)";
+    document.getElementById('trialTimeDisplay').innerText = "🎁 Trial Mode: 30 Days Remaining (10% Access)";
+
+    const box = document.getElementById("clusterTerminal");
+    box.innerHTML += `<br><span style="color:#8250df;">🎁 [FREE TRIAL ACTIVATED]: 1 Month 10% Admin Access Granted. Main server modifications RESTRICTED.</span>`;
+    box.scrollTop = box.scrollHeight;
+
+    alert("✅ [ACTIVATED]: ১ মাসের জন্য ১০% লিমিটেড এডমিন ট্রায়াল অ্যাক্টিভ করা হয়েছে! মূল সার্ভারে কোনো পরিবর্তন করা যাবে না।");
+    closeTrialPopup();
+  }
+
+  function switchTab(index) {
+    activeTab = index;
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach((t, i) => t.classList.toggle('active', i === index));
+
+    document.getElementById('panel-studio').classList.toggle('active', index === 0);
+    document.getElementById('panel-satellite').classList.toggle('active', index === 1);
+    document.getElementById('panel-browser').classList.toggle('active', index === 2);
+  }
+
+  function navigate() {
+    let input = document.getElementById("urlInput").value.trim();
+    if (!input) return;
+
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+      if (input.includes('.') && !input.includes(' ')) {
+        input = 'https://' + input;
+      } else {
+        input = 'https://www.google.com/search?q=' + encodeURIComponent(input) + '&igu=1';
+      }
+    }
+    
+    document.getElementById("webFrame").src = input;
+    switchTab(2);
+  }
+
+  function handleEnter(e) { if (e.key === 'Enter') navigate(); }
+  function addNewTab() { switchTab(2); }
+  function goBack() { try { document.getElementById("webFrame").contentWindow.history.back(); } catch(e){} }
+  function goForward() { try { document.getElementById("webFrame").contentWindow.history.forward(); } catch(e){} }
+  function reloadTab() { const f = document.getElementById("webFrame"); f.src = f.src; }
+
+  function applyLocalRule() {
+    const ruleInput = document.getElementById("customLocalRule").value.trim();
+    if(!ruleInput) return alert("একটি নিয়ম লিখুন!");
+    sessionStorage.setItem("local_override", ruleInput);
+    alert(`🔒 [ISOLATION]: "${ruleInput}" নিয়মটি কেবল এই ডিভাইসে সেট হলো।`);
+  }
+
+  function startSmartRender() {
+    const userRAM = navigator.deviceMemory || 4; 
+    if (userRAM >= 8) {
+      alert(`⚡ আপনার ফোনের র‍্যাম ${userRAM}GB। ক্লায়েন্ট প্রসেসরে কাজ হচ্ছে (সার্ভার খরচ: ₹০)।`);
+    } else {
+      alert(`🚀 র‍্যাম কম হওয়ায় কাজ ১,০০,০০০ ফ্রি ক্লাস্টার নোডে রিডাইরেক্ট করা হলো!`);
+    }
+  }
+
+  function triggerClusterScale() {
+    if (localStorage.getItem("trial_expires") && new Date().getTime() < localStorage.getItem("trial_expires")) {
+      alert("⚠️ [RESTRICTED]: ১০% ট্রায়াল এক্সেসে মূল ক্লাস্টার সার্ভারের কনফিগারেশন পরিবর্তন করা নিষেধ!");
+      return;
+    }
+
+    const users = document.getElementById("simUsers").value;
+    const nodes = document.getElementById("scalingMode").value;
+    const box = document.getElementById("clusterTerminal");
+
+    box.innerHTML += `<br>> [TRAFFIC DETECTED]: ${users} concurrent users requesting access...`;
+    box.scrollTop = box.scrollHeight;
+    
+    setTimeout(() => {
+      box.innerHTML += `<br>> [AUTO-BALANCING]: Distributing load across ${nodes} virtual backend nodes...`;
+      box.scrollTop = box.scrollHeight;
+      setTimeout(() => {
+        box.innerHTML += `<br><span style="color:#58a6ff;">✔ [SUCCESS]: System Load 1.4% | Server Crash Probability: 0.00%</span>`;
+        box.scrollTop = box.scrollHeight;
+      }, 500);
+    }, 500);
+  }
+
+  const PaymentGatewayEngine = {
+    primaryBankServer: "https://gateway-server-a.videocreator.com/transfer",
+    backupVaultServer: "https://gateway-server-b.videocreator.com/vault-sync",
+    jimmyWalletAccount: "AKHTAR_PRIMARY_OWNER_BANK_ACCT_999",
+
+    processSubscriptionPayment: function() {
+      const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
+      const box = document.getElementById("clusterTerminal");
+
+      box.innerHTML += `<br><span style="color:#0969da;">💳 [PAYMENT INITIATED]: Purchase Plan ${selectedPlan} Selected...</span>`;
+      box.scrollTop = box.scrollHeight;
+
+      setTimeout(() => {
+        box.innerHTML += `<br>> [SERVER-A (${this.primaryBankServer})]: Routing funds directly to Owner Account (${this.jimmyWalletAccount})...`;
+        box.scrollTop = box.scrollHeight;
+
+        setTimeout(() => {
+          box.innerHTML += `<br><span style="color:#7ee787;">✔ [SERVER-B (${this.backupVaultServer})]: Payment Verified & Instant Fund Transfer Completed!</span>`;
+          box.scrollTop = box.scrollHeight;
+          
+          alert(`✅ [SUCCESS]: ${selectedPlan} ইয়ারলি সাবস্ক্রিপশন ফি আপনার ব্যাংক অ্যাকাউন্টে ডাইরেক্ট ট্রান্সফার করা হয়েছে!`);
+          document.getElementById('subscriptionPopup').style.display = 'none';
+        }, 800);
+      }, 600);
+    }
+  };
+
+  const MonetizationEngine = {
+    creatorTotal: 0,
+    ownerTotal: 0,
+    adList: [
+      { name: "Gaming Phone Pro Ad", cpm: 450 },
+      { name: "Cloud Hosting Service Ad", cpm: 600 },
+      { name: "E-Commerce Mega Sale Ad", cpm: 350 },
+      { name: "AI Video Editor Tools Ad", cpm: 500 },
+      { name: "Crypto & FinTech App Ad", cpm: 700 },
+      { name: "Automobile & Bike Promotion", cpm: 400 }
+    ],
+    
+    runNextRandomAd: function() {
+      const randomAd = this.adList[Math.floor(Math.random() * this.adList.length)];
+      const randomEarning = Math.floor(Math.random() * (randomAd.cpm - 100)) + 100;
+      
+      const creatorShare = randomEarning * 0.50; 
+      const ownerShare = randomEarning * 0.50;   
+
+      this.creatorTotal += creatorShare;
+      this.ownerTotal += ownerShare;
+
+      document.getElementById('creatorBalance').innerText = `৳ ${this.creatorTotal.toFixed(2)}`;
+      document.getElementById('ownerBalance').innerText = `৳ ${this.ownerTotal.toFixed(2)}`;
+      document.getElementById('currentAdDisplay').innerText = `▶ ব্যাকগ্রাউন্ডে চলছে: ${randomAd.name}`;
+
+      const box = document.getElementById("clusterTerminal");
+      box.innerHTML += `<br><span style="color:#7ee787;">🎲 [RANDOM AD ENDED & NEXT STARTED]: ${randomAd.name}</span>`;
+      box.innerHTML += `<br>> [REVENUE SPLIT]: Creator Got ৳${creatorShare.toFixed(2)} | Owner Got ৳${ownerShare.toFixed(2)}`;
+      box.scrollTop = box.scrollHeight;
+    }
+  };
+
+  setInterval(() => {
+    MonetizationEngine.runNextRandomAd();
+  }, 8000);
+</script>
+</body>
+</html>
